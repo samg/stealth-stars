@@ -1,31 +1,29 @@
 
-
 ### Who are we
 
-I'm Sam Goldstein & I'm Ben Weintraub.  We both work at New Relic on the Ruby agent which is what we call the newrelic_rpm gem.  Here's how you find us online...
+I'm Sam Goldstein & I'm Ben Weintraub.  We both work at New Relic, which is an application performance monitoring service that can give you a lot of visibility into how you Ruby applications are performing in production.  We work specifically on the Ruby agent which you may know as the newrelic_rpm gem.  This is the code that runs in your app and gathers performance metrics which are sent back to our severs.
 
 ### What is a Performance Kata?
 
-Kata (型 or 形 literally: "form"?) is a Japanese word describing detailed choreographed patterns of movements practised either solo or in pairs.  Kata originally were teaching/training methods by which successful combat techniques were preserved and passed on. The basic goal of kata is to preserve and transmit proven techniques and to practice self defence.
+Kata (型 or 形 literally: "form"?) is a Japanese word describing detailed choreographed patterns of movements practised either solo or in pairs.  Kata originally were teaching and training methods by which successful combat techniques were preserved and passed on.
 
 Dave Thomas coined the term Code Kata to describe a coding problem that you can solve over and over again to practice your programing and hone your problem solving reflexes.
 
-At New Relic we've been applying this concept to performance.  Performance is an important feature of any software, and when you solve performace problems you realize that you end up solving similar problems over and over again, in different project and contexts.  Practicing your ability to recognize the shape of these common problems helps you become a better programmer and deliver better software.
+At New Relic we've been applying this concept to performance.  Performance is an important feature of any software, and when you solve performace problems you realize that you end up solving similar problems over and over again, in different projects and contexts.  Practicing your ability to recognize the shape of these common problems helps you become a better programmer and deliver better software.
 
-If you want to try this on your own you should check out http://newrelic-ruby-kata.herokuapp.com/ which has a set of performance puzzles and instructions for setting up the app and New Relic for free on Heroku.
+If you want to try this on your own you should check out http://newrelic-ruby-kata.herokuapp.com/ which is an app you can easily deploy for free to heroku which contains a set of performance puzzles and instructions to guide you through them.
 
-Today though, we're going to go through another set of performance problems that we've hit on a Rails application we have been developing. We'll show you how we identified these problems using New Relic and how we fixed these common performance problems.
+Today though, we're going to go through another set of performance problems that we've hit on a Rails application we have been developing. We'll show you how we identified these problems using New Relic and how we fixed them.
 
 ### Stealth Stars Inc.
 
-Like we said at the beginning of this talk, Ben and I work on the Ruby agent team at New Relic.  But in our spare time we've been bootstrapping a secret intellegence contracting organization called "Stealth Stars Inc."  We thought it would be really cool to run a global network of secret agents.  As we've been growing this new business we've been writing software to help us run the company, but we've hit a few performance problems along the way.  We're going to walk through three of these performance problems with you now and do a little live coding to show you how we resolved them in the Stealth Stars app.
+Like we said at the beginning of this talk, Ben and I work on the Ruby agent team at New Relic.  But in our spare time we've been bootstrapping a secret intellegence contracting organization called "Stealth Stars Inc."  We thought it would be really cool to run a global network of secret agents.  As we've been growing this business we've been writing software to help us run it, but we've hit a few performance problems along the way.  We're going to walk through three of these performance problems and show you how we identified and fixed them in our codebase.
 
-### Performance Problem 1
+### Kata 1 - The big loop
 
-This first example is a warmup, and we've mainly just lifted it from the New Relic Ruby Code Katas, so after seeing it, you'll have a head-start there.
+At Stealth Stars we've been hiring a lot of new operatives and taking on a lot of new missions.
 
-One of the first things we realized as our network of operatives grew was that we had trouble keeping track of which operatives were assigned to which missions. Our operatives are so talented and on top of it that they are often assigned to multiple missions at once. So, we built a missions overview page
-in our application to list all of our active missions, along with their priority, and the list of operatives assigned to each one. Here's what it looks like:
+As our network of operatives grew we realized we were having trouble keeping track of which operatives were assigned to which missions. Our operatives are so talented and on top of it that they are often assigned to multiple missions at once. So, we built a missions overview page in our application to list all of our active missions, along with their priority, and the list of operatives assigned to each one. Here's what it looks like:
 
 (Open http://localhost:8080/missions)
 
@@ -47,6 +45,8 @@ New Relic can also capture Transaction Traces, which are detailed breakdowns of 
 
 Go to:
 https://rpm.newrelic.com/accounts/319532/applications/2107448/transactions?tw[end]=1366847813&tw[start]=1366846725#id=245140449&app_trace_id=964667539&tab-detail_964667539=trace_details
+
+## HANDOFF
 
 Looking at this transaction trace for the MissionsController#index, you can see a chronological view of the events that happened during this particular request, and how long each of them took. Starting from the top, we immediately see a big chunk of time that takes (whatever) ms for rendering our index.html.erb template.
 
@@ -72,16 +72,17 @@ https://rpm.newrelic.com/accounts/319532/applications/2107448/transactions?tw[en
 
 You can see that our 1000 calls to Operative#find_by_sql are gone, and our overall response time is much improved. We're ready to scale up to thousands more missions and operatives!
 
-### Performance Problem 2
+### Kata 2 - The Lazy Load
 
 Around the time that we fixed the issue with our missions index page, we realized that we also had a need to enable our operatives to securely store top secret documents that they were gathering or authoring in the field. We're not quite done building this system yet, but one thing that was really important to us was that the unencrypted document contents never touched the disk on our databaase server. This was important to us because we push our database backups to S3 for archival, and we wanted to ensure they were safe out there.
 
 Of course, with all the thought that went into our document encryption mechanism, we haven't actually built the authentication layer on top of it, but that's coming in the next sprint or two.
 
-Anyhow, in order to make it easier to work with these encrypted documents, we made use of the ActiveRecord object lifecycle hooks to transparently handle encryption and decryption of document bodies.
 
 Here's our current work-in-progress system:
 http://localhost:8080/top_secret_docs
+
+Anyhow, in order to make it easier to work with these encrypted documents, we made use of the ActiveRecord object lifecycle hooks to transparently handle encryption and decryption of document bodies.
 
 We have a list all the docs here, and when you click on a particular one, you can see both the encrypted and decrypted versions of the document body. It looks like our operatives have been gathering a lot of intelligence from the old UNIX 'fortune' program.
 
@@ -112,6 +113,8 @@ Let's take a look at a Thread profile we captured from our Stealth Stars applica
 Go to
 https://rpm.newrelic.com/accounts/319532/applications/2107448/profiles/5411
 
+### HANDOFF
+
 Looking at this thread profile, we can see that the heaviest call path through our application is going through the decrypt method on our TopSecretDoc model that we were looking at previously. But why are we decrypting the document bodies at all in order to display the index page? This apge doesn't actually show the document bodies, just the titles, which are stored unencrypted. Let's take another look at our model.
 
 (Open app/models/top_secret_doc.rb)
@@ -127,7 +130,7 @@ Here's what it looked like in New Relic when we made this change to our producti
 Go to
 https://rpm.newrelic.com/accounts/319532/applications/2107448/transactions?tw[end]=1366859839&tw[start]=1366858039#id=245151300
 
-### Third excercise (queue time)
+### Kata 3 - (The Long Queue)
 
 Our last example touches on some issues related to deployment, outside of our actual application code. At some point some gadget-head within our organization decided it would be cool to give all of our agents a smartphone app that would allow them to periodically download information about all active operatives and missions to their phones, so that they'd always be up to date on things.
 
@@ -141,6 +144,8 @@ Go to
 https://rpm.newrelic.com/accounts/319532/applications/2107448?tw[end]=1366908619&tw[start]=1366906535
 
 You can see that these spikes mainly seem to be caused by 'Request Queueing' time. What does that mean? Well, our application is using what's become a pretty standard deployment setup in the Rails world: we've got nginx as a front-end web server, feeding requests to a few unicorn worker processes on the backend. When we deployed this setup, we made a quick configuration change to nginx to have it write a timestamp into the request headers of incoming requests before passing them along to unicorn backend workers.
+
+### HANDOFF
 
 Here's what that looks like in the nginx configuration file:
 
