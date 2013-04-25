@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>RailsConf 2013 New Relic Ruby Code Kata</title>
+
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<link rel="stylesheet" href="css/reveal.min.css">
+		<link rel="stylesheet" href="css/theme/default.css" id="theme">
+
+		<!-- For syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- If the query includes 'print-pdf', use the PDF print sheet -->
+		<script>
+			document.write( '<link rel="stylesheet" href="css/print/' + ( window.location.search.match( /print-pdf/gi ) ? 'pdf' : 'paper' ) + '.css" type="text/css" media="print">' );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+
+				<section>
+					<h2>New Relic Performance Code Kata</h2>
+					<p>Sam Goldstein / <a href="http://twitter.com/samg">@samg</a></p>
+					<p>Ben Weintraub / <a href="http://twitter.com/benmang">@benmang</a></p>
+  				</p>
+				</section>
+
+				<section>
+					<h2>Who?</h2>
+					<!-- something about the ruby agent team -->
+				</section>
+
+				<section>
+					<h2>型 / 形 / Kata</h2>
+				</section>
+
+				<section>
+					<h2>Same problem, many flavors</h2>
+					<p>
+						Recognize common problems through practice, repetition
+					</p>
+				</section>
+
+				<section>
+					<h2>Try it!</h2>
+					<a href="http://github.com/newrelic/newrelic-ruby-kata">github.com/newrelic/newrelic-ruby-kata</a>
+				</section>
+
+				<section>
+					<h2>Stealth ★'s, Inc.</h2>
+					<p>For all your intelligence contracting needs</p>
+					<p><small>(No, not really)</small></p>
+				</section>
+
+				<section>
+					<h2>Problem 1</h2>
+					<p><a href="http://localhost:8080/missions" target="_blank">Missions</a></p>
+					<p class="fragment"><a href="https://rpm.newrelic.com/accounts/319532/applications/2107448?tw[end]=1366847711&tw[start]=1366846194" target="_blank">... in New Relic</a></p>
+				</section>
+
+				<section>
+					<h2><strike>Problem 1</strike></h2>
+					<p><a href="https://rpm.newrelic.com/accounts/319532/applications/2107448/transactions?tw[end]=1366848781&tw[start]=1366846981#id=245140449" target="_blank">Fixed!</a></p>
+				</section>
+
+				<section>
+					<h2>Problem 2</h2>
+					<p><a href="http://localhost:8080/top_secret_docs" target="_blank">Top Secret Docs</a></p>
+					<p class="fragment"><a href="https://rpm.newrelic.com/accounts/319532/applications/2107448/transactions?tw[end]=1366858552&tw[start]=1366857024#id=245151300" target="_blank">... in New Relic</a></p>
+					<p class="fragment"><a href="https://rpm.newrelic.com/accounts/319532/applications/2107448/profiles/5411" target="_blank">Thread Profile</a></p>
+				</section>
+
+				<section>
+					<h2><strike>Problem 2</strike></h2>
+					<p><a href="https://rpm.newrelic.com/accounts/319532/applications/2107448/transactions?tw[end]=1366859839&tw[start]=1366858039#id=245151300" target="_blank">Fixed!</a></p>
+				</section>
+
+				<section>
+					<h2>Problem 3</h2>
+					<p><a href="https://rpm.newrelic.com/accounts/319532/applications/2107448?tw[end]=1366908619&tw[start]=1366906535" target="_blank">Response time spikes</a></p>
+				</section>
+
+				<section>
+					<h2><strike>Problem 3</strike></h2>
+					<p><a href="https://rpm.newrelic.com/accounts/319532/applications/2107448?tw[end]=1366909996&tw[start]=1366908196" target="_blank">Fixed!</a></p>
+				</section>
+
+				<section>
+					<h2>More Katas</h2>
+					<p><a href="http://github.com/newrelic/newrelic-ruby-kata">github.com/newrelic/newrelic-ruby-kata</a></p>
+				</section>
+
+				<section>
+					<h2>Work with us!</h2>
+					<p><a href="http://newrelic.com/jobs">newrelic.com/jobs</a></p>
+  				<img width="320" height="299" src="images/big_pink.jpg"/>
+  				<p style="font-size: 40%">Image credit: <a href="http://www.flickr.com/photos/noelzialee/286944889/">Noël Zia Lee</a></p>
+				</section>
+
+				<section>
+					<h1>fin</h1>
+				</section>
+
+				<section>
+					<h1>Questions?</h1>
+				</section>
+
+			</div>
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.min.js"></script>
+
+		<script>
+
+			// Full list of configuration options available here:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+				transition: Reveal.getQueryHash().transition || 'default', // default/cube/page/concave/zoom/linear/fade/none
+
+				// Optional libraries used to extend on reveal.js
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/showdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+					{ src: 'plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>
