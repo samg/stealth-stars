@@ -1,7 +1,7 @@
 
 ### Who are we
 
-I'm Sam Goldstein & I'm Ben Weintraub.  We both work at New Relic, which is an application performance monitoring service that can give you a lot of visibility into how you Ruby applications are performing in production.  We work specifically on the Ruby agent which you may know as the newrelic_rpm gem.  This is the code that runs in your app and gathers performance metrics which are sent back to our severs.
+I'm Sam Goldstein & I'm Ben Weintraub.  We both work at New Relic, which is an application performance monitoring service that can gives visibility into how your Ruby applications are performing in production.  We work specifically on the Ruby agent which you may know as the newrelic_rpm gem.  This is the code that runs in your app and gathers performance metrics which are sent back to our severs.
 
 ### What is a Performance Kata?
 
@@ -19,32 +19,36 @@ Today though, we're going to go through another set of performance problems that
 
 Like we said at the beginning of this talk, Ben and I work on the Ruby agent team at New Relic.  But in our spare time we've been bootstrapping a secret intellegence contracting organization called "Stealth Stars Inc."  We thought it would be really cool to run a global network of secret agents.  As we've been growing this business we've been writing software to help us run it, but we've hit a few performance problems along the way.  We're going to walk through three of these performance problems and show you how we identified and fixed them in our codebase.
 
-### Kata 1 - The big loop
+### Kata 1 - The Big Loop
 
-At Stealth Stars we've been hiring a lot of new operatives and taking on a lot of new missions.
+For our first Kata we're going to walk through one of the first performance problems we hit with our Stealth Stars application.  At Stealth Stars we've been hiring a lot of new operatives and taking on a lot of new missions.
 
-As our network of operatives grew we realized we were having trouble keeping track of which operatives were assigned to which missions. Our operatives are so talented and on top of it that they are often assigned to multiple missions at once. So, we built a missions overview page in our application to list all of our active missions, along with their priority, and the list of operatives assigned to each one. Here's what it looks like:
+As our network of operatives grew we realized we were having trouble keeping track of which operatives were assigned to which missions.  To solve this problem we built out a Missions overview page which shows us which secret agents are assigned to which missions.
+
+Here's what that looks like:
 
 (Open http://localhost:8080/missions)
 
-As you can see, we've got our mission codenames on the left, and the assigned operatives for each mission on the right. You can probably imagine the code for implementing this in your head - we're using Mission and Operative models with a has_and_belongs_to_many relationship between them. Pretty straightforward, and Rails makes this dead simple.
+As you can see we have our operatives' code names on the left, and next to that the mission which he or she is assigned to.  You can probably imagine how we implemented this.  We have a Mission model and and Operative model.  A Mission has many Operatives, and an Operative belongs to the Mission they're assigned to.  Pretty straightforward, and Rails makes it dead simple to set up these types of relationships between ActiveRecord models.
 
-As the number of missions and operatives continued to grow, however, we noticed this page was getting a little pokey. We hooked our application up to New Relic's performance monitoring tool, and this allowed us to quantify the performance problem a bit.
+This page was really helpful to helping us track who was on what mission, but we noticed that as we added more missions and operatives the page kept getting slower and slower, so we opened up New Relic to see if we could figure out what was going on.
 
 Go to
 https://rpm.newrelic.com/accounts/319532/applications/2107448
 
-Here's the overview page for our whole Stealth Stars application. This is great for looking at the performance of our application as a whole, but in this case we want to focus on one particular transaction - the Missions index page. We can get there by going to the 'Web Transactions' tab and selecting the transaction we're interested from the list on the left.
+This is the main overview page for the whole Stealth Stars application.  This is useful for when you want to keep an eye over how you're whole app is performing, but for this problem we wanted to dive into a specific transaction - the Missions index page.  To do this we jumped in to "Web Transactions" tab a selected the transaction we're interested in from the list.
 
 Go to:
 https://rpm.newrelic.com/accounts/319532/applications/2107448/transactions?tw[end]=1366847813&tw[start]=1366846725#id=245140449
 
-Looking at this, you can see the response time for this action is around (whatever) ms, which is not great. Looking at the overview graph, we can also see that the majority of the time seems to be in Operative#find, and in template rendering. Those are useful hints, but they still don't tell us exactly what's going on with our transaction.
+Looking at this page you can see that the response time for this action is around XXX ms, which is pretty slow, considering that we're only showing about 100 missions.  From the breakdown graph we can see that we're spending a lot of time rendering the index template and that we're spending a lot of time in XXX#find.
 
-New Relic can also capture Transaction Traces, which are detailed breakdowns of the exact sequence of events for a given transaction. Transaction Traces are by default only captured for transactions that take longer than a certain threshold, and only for a sampling of transactions in order to keep the overhead of gathering them low.
+To really dive into what was causing this slowness we dove into a specific Transaction Trace.  When New Relic notices a slow request it will capture a Transaction Trace which shows a detailed sequence of the events used to render that request.
 
+Here's a transaction trace for one request to the Missions overview page.
 Go to:
 https://rpm.newrelic.com/accounts/319532/applications/2107448/transactions?tw[end]=1366847813&tw[start]=1366846725#id=245140449&app_trace_id=964667539&tab-detail_964667539=trace_details
+
 
 ## HANDOFF
 
@@ -74,7 +78,11 @@ You can see that our 1000 calls to Operative#find_by_sql are gone, and our overa
 
 ### Kata 2 - The Lazy Load
 
-Around the time that we fixed the issue with our missions index page, we realized that we also had a need to enable our operatives to securely store top secret documents that they were gathering or authoring in the field. We're not quite done building this system yet, but one thing that was really important to us was that the unencrypted document contents never touched the disk on our databaase server. This was important to us because we push our database backups to S3 for archival, and we wanted to ensure they were safe out there.
+Around the time that we fixed the issue with our missions index page, we realized that we also had a need to enable our operatives to securely store top secret documents that they were gathering in the field. 
+
+We got to work creating a new 
+
+We're not quite done building this system yet, but one thing that was really important to us was that the unencrypted document contents never touched the disk on our databaase server. This was important to us because we push our database backups to S3 for archival, and we wanted to ensure they were safe out there.
 
 Of course, with all the thought that went into our document encryption mechanism, we haven't actually built the authentication layer on top of it, but that's coming in the next sprint or two.
 
