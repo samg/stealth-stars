@@ -151,20 +151,14 @@ For stealth stars we're running a pool of unicorn processes behind nginx. Like m
 
 ##### HANDOFF TO BEN
 
-Here's what that looks like in the nginx configuration file:
-
-(Open config/nginx.conf)
-
-This directive tells nginx to write the X-Request-Start header into incoming requests, with a timestamp in microseconds since the beginning of the UNIX epoch. The Ruby agent recognizes this header and records the time interval between when nginx saw the request and when it reached our controller in Rails as the queue time.
-
-We used the capacity graphs on the capacity analysis tab to help further quantify the issues we were seeing with queue time on our app. Let's see how that looked.
+Once we started seeing this pattern we were pretty sure that we had hit the capacity limitations on our current setup.  To confirm our suspicions we took a quick look at New Relic's capacity analysis report.
 
 Go to
 https://rpm.newrelic.com/accounts/319532/applications/2107448/optimize/capacity_analysis?tw[end]=1366908619&tw[start]=1366906535
 
-You can see on the app instance analysis graph that we have three unicorn instances currently, and during our traffic spikes, we're getting all three of them working at once. Looking at the App instance busy graph, we can get an idea of the percentage of time our instances are actually spending servicing requests (versus idling). One thing that's important to note about our setup is that each unicorn worker is only able to service a single request at a time. During our traffic spikes, we're hitting 100% utiltization, which means our three unicorn instances are spending all of their available time servicing requests, with almost no idle time in between requests. We have no headroom during those traffic spikes, and thus, requests start piling up in the queue.
+You can see on the app instance analysis graph that we have three unicorn instances currently, and during our traffic spikes, we're getting all three of them working at once. The App instance busy graph shows what percentage of time workers are spending serving requests versus idling.  During our traffic spikes, we're hitting 100% utiltization, which means our three unicorn instances are spending all of their available on requests, and other requests are piling up behind them.
 
-There are many ways to attack a problem like this, and generally you should first consider whether you can reduce the time it takes to process each request, but sometimes that's difficult. In our case, we had already optimized the API action that was being hit pretty heavily, so we decided to try just bumping up the number of unicorn instances available to service requests, thus increasing the number of simultaneous requests we could service.
+There are many ways to attack a problem like this. You should consider whether you can reduce the time it takes to process each request, but sometimes that's difficult. In our case, we had already optimized things pretty heavily, so we decided to just move the application to a beefier server and increase the number unicorn instances we were running, which increase how many requests we can serve concurrently.
 
 This is a simple change that you can make in your unicorn config file, and it looks like this:
 
@@ -175,20 +169,25 @@ We bumped the number of workers up from 3 to 8. After making this change, we saw
 Go to
 https://rpm.newrelic.com/accounts/319532/applications/2107448?tw[end]=1366909996&tw[start]=1366908196
 
-The difference in the capacity analysis report is also striking:
+Now we're still seeing the same spikes in throughput, but our response time stays low during them.
+
+You can also see the difference on the capacity analysis page:
 
 Go to
 https://rpm.newrelic.com/accounts/319532/applications/2107448/optimize/capacity_analysis?tw[end]=1366909996&tw[start]=1366908196
 
-... you can see that we're no longer bumping up against our worker capacity ceiling during traffic spikes, we're only getting to about x% utilization.
+... We're no longer bumping up against our worker capacity ceiling during traffic spikes, we're only getting to about x% utilization.
 
 ### Wrap-up
 
-We found New Relic to be an invaluable tool in scaling our spy organization's web app, and we think it can be invaluable for your app, too. There are a lot of great tools out there for understanding Ruby performance issues, with varying degrees of invasiveness and insight, and we see New Relic as an important part of this greater tool ecosystem. There can be many causes for performance problems - weird interactions between compontents sometimes occur only in production and only at scale, and we think New Relic's key advantage as a tool is that you can use it in production.
+Tackling these performance problems at Stealth Stars has definitely helped us keep the organization on track.  We don't have to deal with a lot of frustrated spys complaining about how slow the app is, we've been able to keep up with as our user base and data grows. 
 
-It's always a great feeling to see the impact of a fix on your production system via the data that New Relic reports, so we've tried to show you a few simple examples of what this looks like. If you enjoyed practicing your Rails performance skills by working through these issues, we highly encourage you to check out the official New Relic Ruby Code Kata on GitHub: http://github.com/newrelic/newrelic-ruby-kata
+One thing we've noticed is that there is a lot of similarity between performance problems we've hit in this app and other apps.  Over time we've both gotten better at recognizing common performance patterns as they pop up in slightly different forms.  Practicing solving performance problems is a great way to hone your skill at recognizing them, so you can solve them quickly when you really need to.
 
-If there's anything you wanted to dig into deeper from our demos today, or if you're looking to start your own international spy network, you can also find the code we used for the app in this talk on GitHub at http://github.com/newrelic/stealth_stars
+If you want to try practicing your Rails performance skills you can check out another New Relic Ruby Code Kata which a couple other New Relic engineers developed.  It's on heroku at http://newrelic-ruby-kata.herokuapp.com/, with instructions on how to fork the code on github, deploy your own copy to heroku and enable New Relic, all for free.
+
+
+If you want to take a closer look at the app we used for today's demos, or if you're looking to start your own international spy network, you can find the code at http://github.com/newrelic/stealth_stars
 
 And lastly, if you *really* like solving these kinds of problems, and want to help us build awesome new tools to broaden and deepen the insights we can provide into Rails and Ruby performance, we're hiring!
 
