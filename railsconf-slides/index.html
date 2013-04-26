@@ -97,6 +97,15 @@ end
 				<section>
 					<h2>Kata 2 - The Lazy Load</h2>
 					<p><a href="http://localhost:8080/top_secret_docs" target="_blank">Top Secret Docs</a></p>
+
+<pre class="fragment"><code>class TopSecretDoc &lt; ActiveRecord::Base
+  ...
+  before_save :encrypt_body
+  after_find :decrypt_body
+  ...
+end
+</code></pre>
+
 					<p class="fragment"><a href="https://rpm.newrelic.com/accounts/319532/applications/2107448/transactions?tw[end]=1366858552&tw[start]=1366857024#id=245151300" target="_blank">... in New Relic</a></p>
 					<p class="fragment"><a href="https://rpm.newrelic.com/accounts/319532/applications/2107448/profiles/5411" target="_blank">Thread Profile</a></p>
 				</section>
