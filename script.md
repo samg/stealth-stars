@@ -21,13 +21,13 @@ Like we said at the beginning of this talk, Ben and I work on the Ruby agent tea
 
 ### Kata 1 - The Big Loop
 
-For our first Kata we're going to walk through one of the first performance problems we hit with our Stealth Stars application.  At Stealth Stars we've been hiring a lot of new operatives and taking on a lot of new missions.
+For our first Kata we're going to walk through one of the first performance problems we hit with our Stealth Stars application.  At Stealth Stars business has been booming and we've been hiring a lot of new operatives and taking on a lot of new missions.
 
 As our network of operatives grew we realized we were having trouble keeping track of which operatives were assigned to which missions.  To solve this problem we built out a Missions overview page which shows us which secret agents are assigned to which missions.
 
 Here's what that looks like:
 
-(Open http://localhost:8080/missions)
+[Missions](http://localhost:8080/missions)
 
 As you can see we have our operatives' code names on the left, and next to that the mission which he or she is assigned to.  You can probably imagine how we implemented this.  We have a Mission model and and Operative model.  A Mission has many Operatives, and an Operative belongs to the Mission they're assigned to.  Pretty straightforward, and Rails makes it dead simple to set up these types of relationships between ActiveRecord models.
 
@@ -50,7 +50,7 @@ Go to:
 https://rpm.newrelic.com/accounts/319532/applications/2107448/transactions?tw[end]=1366847813&tw[start]=1366846725#id=245140449&app_trace_id=964667539&tab-detail_964667539=trace_details
 
 
-## HANDOFF
+##### HANDOFF TO BEN
 
 Looking at this transaction trace for the MissionsController#index, you can see a chronological view of the events that happened during this particular request, and how long each of them took. Starting from the top, we immediately see a big chunk of time that takes (whatever) ms for rendering our index.html.erb template.
 
@@ -78,50 +78,46 @@ You can see that our 1000 calls to Operative#find_by_sql are gone, and our overa
 
 ### Kata 2 - The Lazy Load
 
+After we fixed our N+1 query problem we were able to get back to focusing on running our secret new intellegence network.  Our agents were running a lot of missions and pretty soon we realized that we had collected a lot of confidentional information.  We needed a good way to store and catalog this information so we got to work building an encrypted  
+
 Around the time that we fixed the issue with our missions index page, we realized that we also had a need to enable our operatives to securely store top secret documents that they were gathering in the field. 
 
-We got to work creating a new 
+We got to work creating an encrypted document storage system.  We spent a little time talking with our security analysts about how we wanted our secure storage system to work, and we came up with a few requirements.
 
-We're not quite done building this system yet, but one thing that was really important to us was that the unencrypted document contents never touched the disk on our databaase server. This was important to us because we push our database backups to S3 for archival, and we wanted to ensure they were safe out there.
+We wanted to make sure that the contents of our documents was always encrypted in the database.  This way if someone gained direct access to the database or a copy of it the data wouldn't be accessable.  We also wanted to make sure that it was easy to interact with the documents from our Rails application code which had access to the decryption key.
 
-Of course, with all the thought that went into our document encryption mechanism, we haven't actually built the authentication layer on top of it, but that's coming in the next sprint or two.
+We wanted to avoid sprinkling encryption and decryption code all over the code base, in all the places that we needed to read or write a document, so we decided to take advantage of ActiveRecord::Base's life cycle hooks, so we could trigger encryption everytime we saved to the database, and trigger decryption after we had read a record after the database.
 
+You can see here our TopSecretDoc class has a before_save hook which encrypts the body of the document before it's written to the database.  We've also added an after_find hook, so the body will automatically be decrypted after we read it from the database.  We also took advantage of ActiveSupport's built in MessageEncryptor class which provides a convenient wrapper around OpenSSL's various encryption algorithms.  We also run the document through the encryption algorithm multiple times to make it more expensive to crack the decryption through brute-force password guessing techniques.
 
-Here's our current work-in-progress system:
+This is super convenient since the rest of our code doesn't have to be concerned with the encryption logic, we just interact with the TopSecretDoc's body attribute which gets automatically gets stored as encrypted_body in the database.
+
+Here's what the system looks like in the browser:
+
 http://localhost:8080/top_secret_docs
 
-Anyhow, in order to make it easier to work with these encrypted documents, we made use of the ActiveRecord object lifecycle hooks to transparently handle encryption and decryption of document bodies.
+We have a list of all our encrypted docs here, and when you click on a particular one, you can see both the encrypted and decrypted versions of the document body. 
 
-We have a list all the docs here, and when you click on a particular one, you can see both the encrypted and decrypted versions of the document body. It looks like our operatives have been gathering a lot of intelligence from the old UNIX 'fortune' program.
 
-You probably noticed that the index page for our top secret docs loaded pretty slowly. Since our operatives are paid hourly, it's important to us that they not spend their time waiting for pages in our application to load.
+After we'd launched the first version of Top Secret Docs and loaded all of our documents into it we notice that the Secret Docs index page was loading pretty slowly.  All our secret agents are paid hourly, so it's really important to us that they not spend their time waiting for pages in our application to load and feeling frustrated.
 
-Just for some context, let's take a quick look at how we implemented our document encryption system in concert with ActiveRecord.
+To solve this problem we ended up needing to dive into the details of how our application code was executing.  To do this we opened up the Thread Profiler tab in New Relic's UI.
 
-(Open app/models/top_secret_doc.rb)
+New Relic's thread profiler is what's called a sampling profiler.  A sampling profiler works by spawning a background thread which periodically collects stack traces from all of the application's running threads.  Methods that take a lot of time show up frequently in these stack traces, while fast methods only appear occasionally.
 
-We wanted the encryption system to be as transparent as possible, because we really care about the maintainability of our application, so we used ActiveRecord's object lifecycle hooks to automatically encrypt document bodies before saving them to the database, and decrypt them upon retrieval from the database. The encrypted_body attribute is the only one that's actually saved in the DB, and the 'body' attribute is synthesized by our hooks.
-
-Since we were already using Rails, we decided to use the handy ActiveSupport::MessageEncryptor class to handle encryption and decryption. This has the added benefit of allowing us to append a cryptographic signature to the encrypted the document bodies as well, giving us a gaurantee that they have not been modified. The whole system works pretty well: you don't need to think about the encryption when creating new documents or when loading them from the database, you just use the body attribute as if it were real. You'll also notice that we're doing multiple rounds of encryption because we wanted to be *extra* secure.
-
-So let's take a look at a transaction trace for this page and see if we can spot where the performance issue is.
-
-(Open TT page for TopSecretDocsController#index)
-
-This isn't as helpful as the last trace we looked at - notice this big chunk here is labelled as 'Application code'. By default, the Ruby agent only instruments certain well-known events in order to keep the overhead of tracing low. There are a few ways of getting more detail here, including telling the agent about other methods in our application code that we want it to trace, but sometimes you just have no idea where to start. In cases like that, it's sometimes quicker to use another relatively new feature: the Thread Profiler.
-
-The thread profiler periodically gathers backtraces for all threads within your application, and aggregates those backtraces together into a profile that you can view through the New Relic website in order to get a picture of where your application is spending most of its time. It's a great tool to get a quick overview of what the hottest code paths through your application are, and with that information in hand, you can go back and add custom instrumentation to key parts of your application.
+Over the course of a few minutes the profiler is able to combine these stack traces into a good statistical representation of where the application is spending its time.  The Ruby agent Thread Profiler will send this data back to New Relic so that you can see what percentage of time is spent in each method call.
 
 You can start the thread profiler from the New Relic web UI like this.
 
 (Go to Events > Thread Profiler, click the start button)
+
+##### HANDOFF TO BEN
 
 Let's take a look at a Thread profile we captured from our Stealth Stars application previously.
 
 Go to
 https://rpm.newrelic.com/accounts/319532/applications/2107448/profiles/5411
 
-### HANDOFF
 
 Looking at this thread profile, we can see that the heaviest call path through our application is going through the decrypt method on our TopSecretDoc model that we were looking at previously. But why are we decrypting the document bodies at all in order to display the index page? This apge doesn't actually show the document bodies, just the titles, which are stored unencrypted. Let's take another look at our model.
 
@@ -140,20 +136,20 @@ https://rpm.newrelic.com/accounts/319532/applications/2107448/transactions?tw[en
 
 ### Kata 3 - (The Long Queue)
 
-Our last example touches on some issues related to deployment, outside of our actual application code. At some point some gadget-head within our organization decided it would be cool to give all of our agents a smartphone app that would allow them to periodically download information about all active operatives and missions to their phones, so that they'd always be up to date on things.
+The last performance problem we're going to talk about is one that only saw in the production deployment of the Stealth Stars app.  Our secret agents are frequently in situations where they don't have reliable access to Wifi or cell networks, and as a result it's very useful for them to be able to store the sensitive information they're collecting on their cell phones and sync it to our servers when they get back on the network.
 
-So, we added a simple API action to our app that returns this wall of JSON:
-
-(http://localhost:8080/operatives.json)
-
-That action is consumed by the smartphone app, which polls our servers periodically for updates. After giving this app to all of our field operatives, we started noticing some periodic spikes in our application's response time.
+Ben and I got together and coded up a nice little espionage android app which our agents can use even when they don't have reliable network access.  We got all of our secret agents to install this on their mobile phones, and soon after our Stealth Stars web app started struggling.
 
 Go to
 https://rpm.newrelic.com/accounts/319532/applications/2107448?tw[end]=1366908619&tw[start]=1366906535
 
-You can see that these spikes mainly seem to be caused by 'Request Queueing' time. What does that mean? Well, our application is using what's become a pretty standard deployment setup in the Rails world: we've got nginx as a front-end web server, feeding requests to a few unicorn worker processes on the backend. When we deployed this setup, we made a quick configuration change to nginx to have it write a timestamp into the request headers of incoming requests before passing them along to unicorn backend workers.
+You can see here that we were having periodic spikes in response time.  We realized that the "sync data" function of the mobile app we'd given out was generating a lot of requests to our app when it came back online.  You can see here on the throughput graph that throughput will spike when an agent's app starts syncing, and this increase in throughput results in a big spike in the time each request spends in "Request Queueing".
 
-### HANDOFF
+Request Queueing on this graph is the time between when a request is received by your front end web server, and when it reaches one of your Ruby application processes.  You can usually enable this feature of New Relic with a one line change to your nginx or apache server configuration.  You just configure these servers to set a timestamp in an HTTP header before they proxy the request back to one of your application workers.  The the Ruby agent can calculate the difference between the upstream timestamp and the current time and report it as Request Queueing.
+
+For stealth stars we're running a pool of unicorn processes behind nginx. Like most Ruby web servers unicorn is single threaded, which means that each process can only serve one request at a time.  When all of the unicorn processes are busy serving requests, nginx will queue up new requests until one of the workers becomes available.
+
+##### HANDOFF TO BEN
 
 Here's what that looks like in the nginx configuration file:
 
