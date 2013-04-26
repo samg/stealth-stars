@@ -1,13 +1,25 @@
 
 ### Who are we
 
-I'm Sam Goldstein & I'm Ben Weintraub.  We both work at New Relic. For those of you who aren't familiar, New Relic is is an application performance monitoring service that can gives visibility into how your Ruby applications are performing in production.  We work specifically on the Ruby agent which you may know as the newrelic_rpm gem.  This is the code that runs in your app and gathers performance metrics which are sent back to our severs.
+*slide*
+
+I'm Sam Goldstein & I'm Ben Weintraub.  We both work at New Relic. For those of you who aren't familiar, New Relic is is an application performance monitoring service that can gives visibility into how your Ruby applications are performing in production.  
+
+*slide*
+
+We work specifically on the Ruby agent which you may know as the newrelic_rpm gem.  This is the code that runs in your app and gathers performance metrics which are sent back to our severs.
+
+*slide*
 
 ### What is a Performance Kata?
 
 Kata (型 or 形 literally: "form"?) is a Japanese word describing detailed choreographed patterns of movements practised either solo or in pairs.  Kata originally were teaching and training methods by which successful combat techniques were preserved and passed on.
 
+*slide*
+
 Dave Thomas coined the term Code Kata to describe a coding problem that you can solve over and over again to practice your programing and hone your problem solving reflexes.
+
+*slide*
 
 At New Relic we've been applying this concept to performance.  Performance is an important feature of any software, and when you solve performace problems you realize that you end up solving similar problems over and over again, in different projects and contexts.  Practicing your ability to recognize the shape of these common problems helps you become a better programmer and deliver better software.
 
@@ -15,9 +27,13 @@ Today though, we're going to go through another set of performance problems that
 
 ### HANDOFF TO SAM
 
+*slide*
+
 ### Stealth Stars Inc.
 
 Like we said at the beginning of this talk, Ben and I work on the Ruby agent team at New Relic.  But in our spare time we've been bootstrapping a secret intellegence contracting organization called "Stealth Stars Inc."  We thought it would be really cool to run a global network of secret agents.  As we've been growing this business we've been writing software to help us run it, but we've hit a few performance problems along the way.  We're going to walk through three of these performance problems and show you how we identified and fixed them in our codebase.
+
+*slide*
 
 ### Kata 1 - The Big Loop
 
@@ -70,6 +86,10 @@ Go to:
 https://rpm.newrelic.com/accounts/319532/applications/2107448/transactions#id=245225129&app_trace_id=968719245
 
 You can see that our 1000 calls to Mission#find_by_sql are gone, replaced by a this single SQL query that loads all of our missions in one fell swoop, and our overall response time is much improved. We're ready to scale up to thousands more missions and operatives!
+
+*slide*
+
+Takeaways from this Kata
 
 ### Kata 2 - The Lazy Load
 
