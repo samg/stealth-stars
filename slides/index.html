@@ -15,7 +15,7 @@
 		<link rel="stylesheet" href="css/theme/default.css" id="theme">
 
 		<!-- For syntax highlighting -->
-		<link rel="stylesheet" href="lib/css/zenburn.css">
+		<link rel="stylesheet" href="lib/css/solarized_light.css">
 
 		<!-- If the query includes 'print-pdf', use the PDF print sheet -->
 		<script>
@@ -81,21 +81,22 @@
 
 				<section>
 					<h2>Kata 1 - The Big Loop</h2>
-					<p><a href="http://localhost:8080/operatives" target="_blank">Operatives</a></p>
 
-<pre class="fragment"><code>class Operative &lt; ActiveRecord::Base
+<pre class="fragment"><code class="ruby">class Operative &lt; ActiveRecord::Base
   ...
   belongs_to :mission
   ...
 end
 </code></pre>
 
-<pre class="fragment"><code>class Mission &lt; ActiveRecord::Base
+<pre class="fragment"><code class="ruby">class Mission &lt; ActiveRecord::Base
   ...
   has_many :operatives
   ...
 end
 </code></pre>
+
+					<p class="fragment"><a href="http://localhost:8080/operatives" target="_blank">Operatives</a></p>
 
 					<p class="fragment"><a href="https://rpm.newrelic.com/accounts/319532/applications/2107448?tw[end]=1366952996&tw[start]=1366950982" target="_blank">... in New Relic</a></p>
 				</section>
@@ -127,7 +128,7 @@ end
 				<section>
 					<h2>Kata 2 - The Lazy Load</h2>
 
-<pre><code>class TopSecretDoc &lt; ActiveRecord::Base
+<pre><code class="ruby">class TopSecretDoc &lt; ActiveRecord::Base
   ...
   before_save :encrypt_body
   after_find :decrypt_body
@@ -137,7 +138,7 @@ end
 end
 </code></pre>
 
-<pre class="fragment"><code>...
+<pre class="fragment" class="ruby"><code>...
 def encrypt(plaintext, key)
   cipher = ActiveSupport::MessageEncryptor.new(key)
   cipher.encrypt_and_sign(plaintext)
@@ -172,15 +173,12 @@ end
 				<section>
 					<h2>Sync to Server</h2>
 					<img style="height: 500px" src="images/spy_bird.jpg"/>
-					<p class="fragment"><a href="https://rpm.newrelic.com/accounts/319532/applications/2107448?tw[end]=1366908619&tw[start]=1366906535" target="_blank">Response time spikes</a></p>
 				</section>
 
 				<section>
-					<h2>Queue Time</h2>
-					<p>nginx</p>
-					<pre><code>proxy_set_header X-Request-Start "${msec}";</code></pre>
-					<p>Apache</p>
-					<pre><code>RequestHeader set X-Request-Start "%t"</code></pre>
+					<h2>Kata 3</h2>
+					<p><img style="width: 700px" src="images/kata3-spikes.png"/></p>
+					<p><img style="width: 700px" src="images/kata3-throughput.png"/></p>
 				</section>
 
 				<section>
@@ -189,18 +187,29 @@ end
 				</section>
 
 				<section>
+					<h2>Kata 3</h2>
+					<img src="images/queue.jpg"/>
+					<p><a href="https://rpm.newrelic.com/accounts/319532/applications/2107448/optimize/capacity_analysis?tw[end]=1366908619&tw[start]=1366906535" target="_blank">Capacity analysis</a></p>
+				</section>
+
+				<section>
 					<h2><strike>Kata 3</strike></h2>
 					<p><a href="https://rpm.newrelic.com/accounts/319532/applications/2107448?tw[end]=1366909996&tw[start]=1366908196" target="_blank">Finished!</a></p>
 					<ul>
   					<li class="fragment">Use capacity analysis to see if you're saturated</li>
-						<li class="fragment">Understand the threading model of your server</li>
+						<li class="fragment">Also ensure you're not over-provisioned</li>
 						<li class="fragment">Scale your worker pool based on your load</li>
 					</ul>
 				</section>
 
 				<section>
+					<h2>No more upset spies</h2>
+				</section>
+
+				<section>
 					<h2>More Katas</h2>
-					<p><a href="http://github.com/newrelic/newrelic-ruby-kata">github.com/newrelic/newrelic-ruby-kata</a></p>
+					<p><a href="http://newrelic-ruby-kata.herokuapp.com">newrelic-ruby-kata.herokuapp.com</a></p>
+					<img style="width: 700px" src="images/newrelic-kata.png"/>
 				</section>
 
 				<section>
