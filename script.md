@@ -15,6 +15,8 @@ If you want to try this on your own you should check out http://newrelic-ruby-ka
 
 Today though, we're going to go through another set of performance problems that we've hit on a Rails application we have been developing. We'll show you how we identified these problems using New Relic and how we fixed them.
 
+### HANDOFF TO SAM
+
 ### Stealth Stars Inc.
 
 Like we said at the beginning of this talk, Ben and I work on the Ruby agent team at New Relic.  But in our spare time we've been bootstrapping a secret intellegence contracting organization called "Stealth Stars Inc."  We thought it would be really cool to run a global network of secret agents.  As we've been growing this business we've been writing software to help us run it, but we've hit a few performance problems along the way.  We're going to walk through three of these performance problems and show you how we identified and fixed them in our codebase.
