@@ -11,8 +11,6 @@ Dave Thomas coined the term Code Kata to describe a coding problem that you can 
 
 At New Relic we've been applying this concept to performance.  Performance is an important feature of any software, and when you solve performace problems you realize that you end up solving similar problems over and over again, in different projects and contexts.  Practicing your ability to recognize the shape of these common problems helps you become a better programmer and deliver better software.
 
-If you want to try this on your own you should check out http://newrelic-ruby-kata.herokuapp.com/ which is an app you can easily deploy for free to heroku which contains a set of performance puzzles and instructions to guide you through them.
-
 Today though, we're going to go through another set of performance problems that we've hit on a Rails application we have been developing. We'll show you how we identified these problems using New Relic and how we fixed them.
 
 ### HANDOFF TO SAM
@@ -53,7 +51,7 @@ https://rpm.newrelic.com/accounts/319532/applications/2107448/transactions#id=24
 
 ##### HANDOFF TO BEN
 
-Looking at this transaction trace, we can see a chronological view of the major events that happened during this particular request, and how long each one took. Starting from the top, we immediately see a big chunk of time spent in our index template. More specifically, this red row nested under the template rendering indicates that we've got 1000 calls to Operative#find_by_sql originating from our template. Let's take a look at the code and see if we can fix it.
+Looking at this transaction trace, we can see a chronological view of the major events that happened during this particular request, and how long each one took. Starting from the top, we immediately see a big chunk of time spent in our index template. More specifically, this red row nested under the template rendering indicates that we've got 1000 calls to Operative#find_by_sql originating from our template. Looking at the SQL for those loads, we can see that we're loading just one Mission at a time. Let's take a look at the code and see if we can fix it.
 
 (Open app/views/missions/index.html.erb)
 
@@ -61,7 +59,7 @@ Here's our template for the operatives index page - you can see we're looping ov
 
 (Open app/controllers/missions_controller.rb)
 
-The easiest way to get ActiveRecord to eagerly load the missions assigned to each operative is to chain in an includes(:operatives) call here in our query, so let's do that. Here's what it looked like when we deployed this change to our Stealth Stars app in production:
+The easiest way to get ActiveRecord to eagerly load the missions assigned to each operative is to chain in an includes(:missions) call here in our query, so let's do that. Here's what it looked like when we deployed this change to our Stealth Stars app in production:
 
 Go to:
 https://rpm.newrelic.com/accounts/319532/applications/2107448/transactions?tw[end]=1366955870&tw[start]=1366952559#id=245225129
@@ -71,7 +69,7 @@ And for comparison, here's an example transaction trace showing the improvement 
 Go to:
 https://rpm.newrelic.com/accounts/319532/applications/2107448/transactions#id=245225129&app_trace_id=968719245
 
-You can see that our 1000 calls to Operative#find_by_sql are gone, replaced by a single SQL query, and our overall response time is much improved. We're ready to scale up to thousands more missions and operatives!
+You can see that our 1000 calls to Mission#find_by_sql are gone, replaced by a this single SQL query that loads all of our missions in one fell swoop, and our overall response time is much improved. We're ready to scale up to thousands more missions and operatives!
 
 ### Kata 2 - The Lazy Load
 
@@ -115,7 +113,9 @@ Let's take a look at a Thread profile we captured from our Stealth Stars applica
 Go to
 https://rpm.newrelic.com/accounts/319532/applications/2107448/profiles/5411
 
-Looking at this profile, we can see that the heaviest call path through our application is going through the decrypt method on our TopSecretDoc model. That's a bit surprising, given that we don't actually need the decrypted document contents to display the index page. If we expand this group of collapsed methods just above the decrypt call in the call tree, we can see that the decrypt calls are coming from ActiveSupport's run_callbacks method, and specifically, it looks like we're hitting our after_find hook each time we load a TopSecretDoc instance from the database.
+You can see that the profile is organized as a call tree, with our main function up at the top, and each row corresponding to a particular call stack. The percentages next to each row indicate how frequently that call stack was seen during the course of the profile. Following the heaviest call path we see that it's going through the decrypt method on our TopSecretDoc model.
+
+That's a bit surprising, given that we don't actually need the decrypted document contents to display the index page. If we expand this group of collapsed methods just above the decrypt call in the call tree, we can see that the decrypt calls are coming from ActiveSupport's run_callbacks method, and specifically, it looks like we're hitting our after_find hook each time we load a TopSecretDoc instance from the database.
 
 Let's take a look at our model and see if we can improve this, since there's no reason to be decrypting the document bodies just to render the index page.
 
