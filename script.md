@@ -34,12 +34,12 @@ As you can see we have our operatives' code names on the left, and next to that 
 This page was really helpful to helping us track who was on what mission, but we noticed that as we added more missions and operatives the page kept getting slower and slower, so we opened up New Relic to see if we could figure out what was going on.
 
 Go to
-https://rpm.newrelic.com/accounts/319532/applications/2107448
+https://rpm.newrelic.com/accounts/319532/applications/2107448?tw[end]=1366952996&tw[start]=1366950982
 
 This is the main overview page for the whole Stealth Stars application.  This is useful for when you want to keep an eye over how you're whole app is performing, but for this problem we wanted to dive into a specific transaction - the Missions index page.  To do this we jumped in to "Web Transactions" tab a selected the transaction we're interested in from the list.
 
 Go to:
-https://rpm.newrelic.com/accounts/319532/applications/2107448/transactions?tw[end]=1366847813&tw[start]=1366846725#id=245140449
+https://rpm.newrelic.com/accounts/319532/applications/2107448/transactions?tw[end]=1366952996&tw[start]=1366950982#id=245225129
 
 Looking at this page you can see that the response time for this action is around XXX ms, which is pretty slow, considering that we're only showing about 1000 missions.  From the breakdown graph we can see that we're spending a lot of time rendering the index template and that we're spending a lot of time in Mission#find.
 
@@ -47,8 +47,7 @@ To really dive into what was causing this slowness we dove into a specific Trans
 
 Here's a transaction trace for one request to the Missions overview page.
 Go to:
-https://rpm.newrelic.com/accounts/319532/applications/2107448/transactions?tw[end]=1366847813&tw[start]=1366846725#id=245140449&app_trace_id=964667539&tab-detail_964667539=trace_details
-
+https://rpm.newrelic.com/accounts/319532/applications/2107448/transactions#id=245225129&app_trace_id=968699940
 
 ##### HANDOFF TO BEN
 
@@ -63,12 +62,12 @@ Here's our template for the operatives index page - you can see we're looping ov
 The easiest way to get ActiveRecord to eagerly load the missions assigned to each operative is to chain in an includes(:operatives) call here in our query, so let's do that. Here's what it looked like when we deployed this change to our Stealth Stars app in production:
 
 Go to:
-https://rpm.newrelic.com/accounts/319532/applications/2107448/transactions?tw[end]=1366848781&tw[start]=1366846981#id=245140449
+https://rpm.newrelic.com/accounts/319532/applications/2107448/transactions?tw[end]=1366955870&tw[start]=1366952559#id=245225129
 
 And for comparison, here's an example transaction trace showing the improvement we made:
 
 Go to:
-https://rpm.newrelic.com/accounts/319532/applications/2107448/transactions?tw[end]=1366848670&tw[start]=1366848023#id=245140449&app_trace_id=964698861&tab-detail_964698861=trace_details
+https://rpm.newrelic.com/accounts/319532/applications/2107448/transactions#id=245225129&app_trace_id=968719245
 
 You can see that our 1000 calls to Operative#find_by_sql are gone, replaced by a single SQL query, and our overall response time is much improved. We're ready to scale up to thousands more missions and operatives!
 
