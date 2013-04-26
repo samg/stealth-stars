@@ -1,7 +1,7 @@
 
 ### Who are we
 
-I'm Sam Goldstein & I'm Ben Weintraub.  We both work at New Relic, which is an application performance monitoring service that can gives visibility into how your Ruby applications are performing in production.  We work specifically on the Ruby agent which you may know as the newrelic_rpm gem.  This is the code that runs in your app and gathers performance metrics which are sent back to our severs.
+I'm Sam Goldstein & I'm Ben Weintraub.  We both work at New Relic. For those of you who aren't familiar, New Relic is is an application performance monitoring service that can gives visibility into how your Ruby applications are performing in production.  We work specifically on the Ruby agent which you may know as the newrelic_rpm gem.  This is the code that runs in your app and gathers performance metrics which are sent back to our severs.
 
 ### What is a Performance Kata?
 
@@ -41,7 +41,7 @@ This is the main overview page for the whole Stealth Stars application.  This is
 Go to:
 https://rpm.newrelic.com/accounts/319532/applications/2107448/transactions?tw[end]=1366847813&tw[start]=1366846725#id=245140449
 
-Looking at this page you can see that the response time for this action is around XXX ms, which is pretty slow, considering that we're only showing about 100 missions.  From the breakdown graph we can see that we're spending a lot of time rendering the index template and that we're spending a lot of time in XXX#find.
+Looking at this page you can see that the response time for this action is around XXX ms, which is pretty slow, considering that we're only showing about 1000 missions.  From the breakdown graph we can see that we're spending a lot of time rendering the index template and that we're spending a lot of time in Mission#find.
 
 To really dive into what was causing this slowness we dove into a specific Transaction Trace.  When New Relic notices a slow request it will capture a Transaction Trace which shows a detailed sequence of the events used to render that request.
 
@@ -52,29 +52,25 @@ https://rpm.newrelic.com/accounts/319532/applications/2107448/transactions?tw[en
 
 ##### HANDOFF TO BEN
 
-Looking at this transaction trace for the MissionsController#index, you can see a chronological view of the events that happened during this particular request, and how long each of them took. Starting from the top, we immediately see a big chunk of time that takes (whatever) ms for rendering our index.html.erb template.
-
-That's pretty strange, so let's drill down further. This red row nested under the template rendering indicates that we've got 1000 calls to Operative#find_by_sql originating from our template - a classic N+1 queries problem. Let's take a look at the code and see if we can fix it.
+Looking at this transaction trace, we can see a chronological view of the major events that happened during this particular request, and how long each one took. Starting from the top, we immediately see a big chunk of time spent in our index template. More specifically, this red row nested under the template rendering indicates that we've got 1000 calls to Operative#find_by_sql originating from our template. Let's take a look at the code and see if we can fix it.
 
 (Open app/views/missions/index.html.erb)
 
-Here's our template for the missions index page - you can see we're looping over the @missions variable assigned by the controller action, and then hitting the operatives relation on each mission to load all of the operatives and iterate over them. Each one of these calls to Mission#operatives is resulting in a separate database query. ActiveRecord makes it easy to fix this - let's jump over to the controller to see how.
+Here's our template for the operatives index page - you can see we're looping over the @operatives instance variable assigned by the controller, and then hitting the mission relation on each operative to load the mission assigned to that operative. We know based on our transaction trace that each one of these calls to Operative#mission is resulting in a separate database query - a classic N+1 query problem. What we'd like to do is convince ActiveRecord to eagerly load the missions associated with each operative using a smaller number of queries, so let's look at how we're loading operatives in the associated controller action.
 
 (Open app/controllers/missions_controller.rb)
 
-What we'd like to do is tell ActiveRecord to eagerly load the operatives association here, since we know we're going to need it to render the template. There are multiple ways to accomplish this, but he easiest one to demonstrate is just to chain in an includes(:operatives) call here into our query.
-
-One of the most gratifying experiences to have with New Relic is to deploy your change to production, and see the graphs shift dramatically after your change. Here's what it looked like when we made this change to our Stealth Stars application in production:
+The easiest way to get ActiveRecord to eagerly load the missions assigned to each operative is to chain in an includes(:operatives) call here in our query, so let's do that. Here's what it looked like when we deployed this change to our Stealth Stars app in production:
 
 Go to:
 https://rpm.newrelic.com/accounts/319532/applications/2107448/transactions?tw[end]=1366848781&tw[start]=1366846981#id=245140449
 
-And just for good measure, here's a transaction trace showing what this transaction looks like after our change:
+And for comparison, here's an example transaction trace showing the improvement we made:
 
 Go to:
 https://rpm.newrelic.com/accounts/319532/applications/2107448/transactions?tw[end]=1366848670&tw[start]=1366848023#id=245140449&app_trace_id=964698861&tab-detail_964698861=trace_details
 
-You can see that our 1000 calls to Operative#find_by_sql are gone, and our overall response time is much improved. We're ready to scale up to thousands more missions and operatives!
+You can see that our 1000 calls to Operative#find_by_sql are gone, replaced by a single SQL query, and our overall response time is much improved. We're ready to scale up to thousands more missions and operatives!
 
 ### Kata 2 - The Lazy Load
 
@@ -118,21 +114,22 @@ Let's take a look at a Thread profile we captured from our Stealth Stars applica
 Go to
 https://rpm.newrelic.com/accounts/319532/applications/2107448/profiles/5411
 
+Looking at this profile, we can see that the heaviest call path through our application is going through the decrypt method on our TopSecretDoc model. That's a bit surprising, given that we don't actually need the decrypted document contents to display the index page. If we expand this group of collapsed methods just above the decrypt call in the call tree, we can see that the decrypt calls are coming from ActiveSupport's run_callbacks method, and specifically, it looks like we're hitting our after_find hook each time we load a TopSecretDoc instance from the database.
 
-Looking at this thread profile, we can see that the heaviest call path through our application is going through the decrypt method on our TopSecretDoc model that we were looking at previously. But why are we decrypting the document bodies at all in order to display the index page? This apge doesn't actually show the document bodies, just the titles, which are stored unencrypted. Let's take another look at our model.
+Let's take a look at our model and see if we can improve this, since there's no reason to be decrypting the document bodies just to render the index page.
 
 (Open app/models/top_secret_doc.rb)
 
-You can see that we've got an after_find hook here that's eagerly decrypting our document bodies. This means the body gets decrypted (which is a relatively expensive operation) every time we load one of these models via ActiveRecord, even if we never directly reference the body attribute.
-
-Fixing this is actually pretty easy: we can make the body synthesized attribute lazily decrypted by adding a body method that assigns to it, and removing the after_find hook, like this:
+This problem is almost the inverse of the previous one: there we were being too lazy, and here we're being too eager. We'd like to keep the convenience of not forcing code that uses this model to explicitly decrypt the document body, but not do the decryption unnecessarily. We can accomplish this by writing an accessor method for the body pseudo-attribute that lazily decrypts the first time it's called. This way, we'll defer the work of decryption until we actually need to do it.
 
 (Make the edits to the TopSecretDoc model)
 
-Here's what it looked like in New Relic when we made this change to our production application:
+So we made this change to our TopSecretDoc model, and here's what it looked like when we deployed it:
 
 Go to
 https://rpm.newrelic.com/accounts/319532/applications/2107448/transactions?tw[end]=1366859839&tw[start]=1366858039#id=245151300
+
+You can see that our response time for this transaction has dropped dramatically, and we're ready to add lots more documents.
 
 ### Kata 3 - (The Long Queue)
 
@@ -158,7 +155,7 @@ https://rpm.newrelic.com/accounts/319532/applications/2107448/optimize/capacity_
 
 You can see on the app instance analysis graph that we have three unicorn instances currently, and during our traffic spikes, we're getting all three of them working at once. The App instance busy graph shows what percentage of time workers are spending serving requests versus idling.  During our traffic spikes, we're hitting 100% utiltization, which means our three unicorn instances are spending all of their available on requests, and other requests are piling up behind them.
 
-There are many ways to attack a problem like this. You should consider whether you can reduce the time it takes to process each request, but sometimes that's difficult. In our case, we had already optimized things pretty heavily, so we decided to just move the application to a beefier server and increase the number unicorn instances we were running, which increase how many requests we can serve concurrently.
+There are many ways to attack a problem like this. You should consider whether you can reduce the time it takes to process each request, but sometimes that's difficult. In our case, we had already optimized things pretty heavily, so we decided to just move the application to a beefier server and increase the number unicorn instances we were running, which increased the number of requests we could serve concurrently.
 
 This is a simple change that you can make in your unicorn config file, and it looks like this:
 
@@ -169,18 +166,18 @@ We bumped the number of workers up from 3 to 8. After making this change, we saw
 Go to
 https://rpm.newrelic.com/accounts/319532/applications/2107448?tw[end]=1366909996&tw[start]=1366908196
 
-Now we're still seeing the same spikes in throughput, but our response time stays low during them.
+Note that we're still seeing the same spikes in throughput, but our response time stays flat throughout them.
 
 You can also see the difference on the capacity analysis page:
 
 Go to
 https://rpm.newrelic.com/accounts/319532/applications/2107448/optimize/capacity_analysis?tw[end]=1366909996&tw[start]=1366908196
 
-... We're no longer bumping up against our worker capacity ceiling during traffic spikes, we're only getting to about x% utilization.
+... we're no longer bumping up against our worker capacity ceiling during traffic spikes, we're only getting to about x% utilization.
 
 ### Wrap-up
 
-Tackling these performance problems at Stealth Stars has definitely helped us keep the organization on track.  We don't have to deal with a lot of frustrated spys complaining about how slow the app is, we've been able to keep up with as our user base and data grows. 
+Tackling these performance problems at Stealth Stars has definitely helped us keep the organization on track.  We don't have to deal with a lot of frustrated spies complaining about how slow the app is, we've been able to keep up with as our user base and data grows. 
 
 One thing we've noticed is that there is a lot of similarity between performance problems we've hit in this app and other apps.  Over time we've both gotten better at recognizing common performance patterns as they pop up in slightly different forms.  Practicing solving performance problems is a great way to hone your skill at recognizing them, so you can solve them quickly when you really need to.
 

@@ -1,0 +1,27 @@
+
+- turn off obfuscation
+
+- picture of Dave Thomas
+
+- model code for slides (example 1)
+
+class Operative < ActiveRecord::Base
+  belongs_to :mission
+  ...
+end
+
+class Mission < ActiveRecord::Base
+  has_many :operatives
+  ...
+end
+
+- model code for slides (example 2)
+
+class TopSecretDoc
+  ...
+  before_save :encrypt_body
+  after_find :decrypt_body
+  ...
+end
+
+- screenshot all of the things
