@@ -37,7 +37,7 @@ Like we said at the beginning of this talk, Ben and I work on the Ruby agent tea
 
 ### Kata 1 - The Big Loop
 
-For our first Kata we're going to walk through one of the first performance problems we hit with our Stealth Stars application.  At Stealth Stars business has been booming and we've been hiring a lot of new operatives and taking on a lot of new missions.
+For our first Kata I'm going to talk through one of the first performance problems we hit with our Stealth Stars application.  At Stealth Stars business has been booming and we've been hiring a lot of new operatives and taking on a lot of new missions.
 
 As our network of operatives grew we realized we were having trouble keeping track of which operatives were assigned to which missions.  To solve this problem we built out a Missions overview page which shows us which secret agents are assigned to which missions.
 
@@ -47,7 +47,7 @@ We have an Operative model and and Mission model.  An Operative belongs_to the M
 
 Pretty straightforward, and Rails makes it dead simple to set up these types of relationships between ActiveRecord models.
 
-Here's what that looks like:
+Here's what that looks like in the browser:
 
 [Missions](http://localhost:8080/missions)
 
@@ -63,7 +63,7 @@ This is the main overview page for the whole Stealth Stars application.  This is
 Go to:
 https://rpm.newrelic.com/accounts/319532/applications/2107448/transactions?tw[end]=1366952996&tw[start]=1366950982#id=245225129
 
-Looking at this page you can see that the response time for this action is around XXX ms, which is pretty slow, considering that we're only showing about 1000 missions.  From the breakdown graph we can see that we're spending a lot of time rendering the index template and that we're spending a lot of time in Mission#find.
+Looking at this page you can see that the response time for this action is around XXX ms.  From the breakdown graph we can see that we're spending a lot of time rendering the index template and that we're spending a lot of time in Mission#find.
 
 ##### HANDOFF TO BEN
 
@@ -103,21 +103,21 @@ Takeaways from this Kata
 
 ### Kata 2 - The Lazy Load
 
-After we fixed our N+1 query problem we were able to get back to focusing on running our secret new intellegence network.  Our agents were running a lot of missions and pretty soon we realized that we had collected a lot of confidentional information.  
+After we fixed our N+1 query problem we were able to get back to focusing on running our spy network.  Our agents were running a lot of missions and pretty soon we realized that we had collected a lot of confidentional information.  
 
-We needed a good way to store and catalog this information so we got to work building an encrypted document storage system.  We spent a little time talking with our security analysts about how we wanted our secure storage system to work, and we came up with a few requirements.
+We needed a good way to store and catalog this information so we got to work building an encrypted document storage system.  We spent a little time talking with our security analysts about how we wanted our secure storage system to work, and we came up with a couple requirements.
 
 *slides*
 
-We wanted to make sure that the contents of our documents was always encrypted in the database.  This way if someone gained direct access to the database or a copy of it the data wouldn't be accessable.  We also wanted to make sure that it was easy to interact with the documents from our Rails application code which had access to the decryption key.
+We wanted to make sure that the contents of our documents were always encrypted in the database.  This way if someone gained direct access to the database or a copy of it the data wouldn't be accessable.  We also wanted to make sure that the encryption logic was centralized so that we didn't have to remember when we had to encrypt data when we were working on other parts of the codebase.
 
 *slide*
 
-To avoid sprinkling encryption and decryption code all over the code base every time we needed to read or write a document, we decided to take advantage of ActiveRecord::Base's life cycle hooks, so we could trigger encryption everytime we saved to the database, and trigger decryption after we had read a record from the database.
+To avoid sprinkling encryption and decryption code all over the app every time read or write a document, we decided to use of ActiveRecord::Base's life cycle hooks. That way we could trigger encryption everytime we saved to the database, and trigger decryption after we had read a record from the database.
 
-You can see here our TopSecretDoc class has a before_save hook which encrypts the body of the document before it's written to the database.  We've also added an after_find hook, so the body will automatically be decrypted after we read it from the database.  We took advantage of ActiveSupport's built in MessageEncryptor class which provides a convenient wrapper around OpenSSL's various encryption algorithms. 
+You can see here our TopSecretDoc class has a before_save hook which encrypts the body of the document before it's written to the database.  We've also added an after_find hook, so the body will automatically be decrypted after we read it from the database.  We took advantage of ActiveSupport's built in MessageEncryptor class which provides a convenient wrapper around OpenSSL's encryption algorithms. 
 
-This ended up being super convenient since the rest of our code doesn't have to be concerned with the encryption logic, we just interact with the TopSecretDoc's body attribute which gets automatically gets stored as encrypted_body in the database.
+Implementing our encryption logic this way ended up being a big win for us since the rest of our code doesn't have to be concerned with how we store documents in the database.  The rest of our code can just interact with a body attribute on our TopSecretDoc model and when we save a record which gets automatically gets converted to encrypted_body in the database.
 
 Here's what the system looks like in the browser:
 
@@ -127,7 +127,7 @@ We have a list of all our encrypted docs here, and when you click on a particula
 
 *slide*
 
-After we'd launched the first version of Top Secret Docs and loaded all of our documents into it we notice that the Secret Docs index page was loading pretty slowly.  All our secret agents are paid hourly, so it's really important to us that they not spend their time waiting for pages in our application to load and feeling frustrated.
+After we'd launched the first version of Top Secret Docs and migrated all of our documents into it we notice that the Secret Docs index page was loading pretty slowly.  All our secret agents are paid hourly, so it's really important to us that they don't spend time waiting for pages in our application to load and feeling frustrated.
 
 To solve this problem we ended up needing to dive into the details of how our application code was executing.  To do this we opened up the Thread Profiler tab in New Relic's UI.
 
@@ -171,21 +171,21 @@ Takeaways
 
 ### Kata 3 - (The Long Queue)
 
-The last performance problem we're going to talk about is one that only saw in the production deployment of the Stealth Stars app.  Our secret agents are frequently in situations where they don't have reliable access to Wifi or cell networks, and as a result it's very useful for them to be able to store the sensitive information they're collecting on their cell phones and sync it to our servers when they get back on the network.
+The last performance problem we're going to talk about is one that we only saw in the production deployment of the Stealth Stars app.  Our secret agents are frequently in situations where they don't have reliable access to Wifi or cell networks, and as a result it's very useful for them to be able to store the sensitive information they're collecting on their cell phones and sync it to our servers when they get back on the network.
 
 *slide*
 
-Ben and I got together and coded up a nice little espionage android app which our agents can use even when they don't have reliable network access.  We got all of our secret agents to install this on their mobile phones, and soon after our Stealth Stars web app started struggling.
+Ben and I got together and coded up a little Stealth Stars mobile app which our agents can use even when they don't have reliable network access.  We asked all of our secret agents to install this on their mobile phones, and soon after our Stealth Stars web app started struggling.
 
-Go to
-https://rpm.newrelic.com/accounts/319532/applications/2107448?tw[end]=1366908619&tw[start]=1366906535
+*slide*
 
-You can see here that we were having periodic spikes in response time.  We realized that the "sync data" function of the mobile app we'd given out was generating a lot of requests to our app when it came back online.  You can see here on the throughput graph that throughput will spike when an agent's app starts syncing, and this increase in throughput results in a big spike in the time each request spends in "Request Queueing".
+You can see from these screenshots that we were having periodic spikes in response time.  We realized that the "sync data" function of our mobile app was generating a lot of requests to our web application.  You can see here on the throughput graph that throughput will spike when an agent's app starts syncing, and this increase in throughput results in a big spike in the time each request spends in "Request Queueing".
 Request Queueing on this graph is the time between when a request is received by your front end web server, and when it reaches one of your Ruby application processes.  
 
 *slide*
 
-For stealth stars we're running a pool of unicorn processes behind nginx. Like most Ruby web servers unicorn is single threaded, which means that each process can only serve one request at a time.  When all of the unicorn processes are busy serving requests, nginx will queue up new requests until one of the workers becomes available.
+We deploy the Stealth Stars web application in a fairly common way.
+We're running the nginx web server with a pool of unicorn processes sitting behind it.  Each unicorn process contains a copy of our application and nginx proxies the requests it receives back to one of the available unicorns. Like most Ruby web servers unicorn is single threaded, which means that each process can only serve one request at a time.  When all of the unicorn processes are busy serving requests, nginx will queue up new requests until one of the workers becomes available.
 
 
 
@@ -220,7 +220,7 @@ https://rpm.newrelic.com/accounts/319532/applications/2107448/optimize/capacity_
 
 ### Wrap-up
 
-Tackling these performance problems at Stealth Stars has definitely helped us keep the organization on track.  We don't have to deal with a lot of frustrated spies complaining about how slow the app is, we've been able to keep up with as our user base and data grows. 
+Tackling these performance problems at Stealth Stars has definitely helped us keep the organization on track.  We don't have to deal with a lot of frustrated spies complaining about how slow the app is, and we've been able to keep up with as our organization and data grows. 
 
 One thing we've noticed is that there is a lot of similarity between performance problems we've hit in this app and other apps.  Over time we've both gotten better at recognizing common performance patterns as they pop up in slightly different forms.  Practicing solving performance problems is a great way to hone your skill at recognizing them, so you can solve them quickly when you really need to.
 
