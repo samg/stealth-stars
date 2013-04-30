@@ -150,21 +150,30 @@ end
 					<h2>Kata 2 - The Lazy Load</h2>
 					<p>Top Secret Document Storage</p>
 					<img src="images/redacted.jpg"/>
+                                        <p class="fragment">PRO TIP:<br/> If your app needs to be secure, consult with a security expert.</p>
 				</section>
 
 				<section>
 					<h2>Top Secret Docs Requirements</h2>
 					<ul>
 						<li>Documents are encrypted on disk</li>
-						<li>Hard to accidentally forget to encrypt</li>
+                                                <li>Centralize encryption logic:<br/> It should be hard to accidentally forget to encrypt</li>
 					</ul>
 				</section>
 
 				<section>
 					<section>
 						<h2>Kata 2 - The Lazy Load</h2>
+<pre class="" class="ruby"><code>...
+def encrypt(plaintext, key)
+  cipher = ActiveSupport::MessageEncryptor.new(key)
+  cipher.encrypt_and_sign(plaintext)
+end
+...
+</code></pre>
 
-<pre><code class="ruby">class TopSecretDoc &lt; ActiveRecord::Base
+
+<pre class="fragment"><code class="ruby">class TopSecretDoc &lt; ActiveRecord::Base
   ...
   before_save :encrypt_body
   after_find :decrypt_body
@@ -174,13 +183,11 @@ end
 end
 </code></pre>
 
-<pre class="fragment" class="ruby"><code>...
-def encrypt(plaintext, key)
-  cipher = ActiveSupport::MessageEncryptor.new(key)
-  cipher.encrypt_and_sign(plaintext)
-end
-...
+<pre class="fragment"><code class="ruby">@doc = TopSecretDoc.new
+@doc.body = "New secret data"
+@doc.save
 </code></pre>
+
 
 						<p class="fragment"><a href="http://localhost:8080/top_secret_docs" target="_blank">Top Secret Docs</a></p>
 					</section>
@@ -239,9 +246,9 @@ end
 				</section>
 
 				<section>
-					<h2>Kata 3</h2>
-					<p><img style="width: 700px" src="images/kata3-spikes.png"/></p>
-					<p><img style="width: 700px" src="images/kata3-throughput.png"/></p>
+					<h2>Mobile Apps causing Traffic Spikes</h2>
+					<p class="fragment"><img style="width: 700px" src="images/kata3-throughput.png"/></p>
+					<p class="fragment"><img style="width: 700px" src="images/kata3-spikes.png"/></p>
 				</section>
 
 				<section>
