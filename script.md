@@ -17,13 +17,13 @@ Kata (型 or 形 literally: "form"?) is a Japanese word describing detailed chor
 
 *slide*
 
-Dave Thomas coined the term Code Kata to describe a coding problem that you can solve over and over again to practice your programing and hone your problem solving reflexes.
+Dave Thomas, of Pragmatic Programmer fame, coined the term code kata to describe a programming problem you can solve over and over again to practice your programming skills, and hone your coding reflexes. He has a great quote comparing coding to music that I've put up here, the point of which is - you don't get to be a brilliant musician by repeatedly getting up on stage and winging it - you get there through practice.
 
 *slide*
 
-At New Relic we've been applying this concept to performance.  Performance is an important feature of any software, and when you solve performace problems you realize that you end up solving similar problems over and over again, in different projects and contexts.  Practicing your ability to recognize the shape of these common problems helps you become a better programmer and deliver better software.
+At New Relic, we've been applying the concept of the code kata to performance problems specifically. Performance is an important feature of any software, and when you solve a lot of performance issues, you'll realize that some  patterns emerge. The details are different, and things appear in different contexts, but certain shapes of problems show up repeatedly. We think practicing analyzing and solving performance problems can help you become a better programmer and deliver better software, so today we're going to take you through some performance problems that we've encountered with a Rails application that we've been developing.
 
-Today though, we're going to go through another set of performance problems that we've hit on a Rails application we have been developing. 
+Today though, we're going to go through another set of performance problems that we've hit on a Rails application we have been developing.
 
 ### HANDOFF TO SAM
 
