@@ -83,6 +83,13 @@
 					<section>
 						<h2>Kata 1 - The Big Loop</h2>
 
+<pre class="fragment"><code class="ruby">class Mission &lt; ActiveRecord::Base
+  ...
+  has_many :operatives
+  ...
+end
+</code></pre>
+
 <pre class="fragment"><code class="ruby">class Operative &lt; ActiveRecord::Base
   ...
   belongs_to :mission
@@ -90,12 +97,6 @@
 end
 </code></pre>
 
-<pre class="fragment"><code class="ruby">class Mission &lt; ActiveRecord::Base
-  ...
-  has_many :operatives
-  ...
-end
-</code></pre>
 
 						<p class="fragment"><a href="http://localhost:8080/operatives" target="_blank">Operatives</a></p>
 
